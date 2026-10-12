@@ -70,11 +70,16 @@ npx zapier-platform login
 npx zapier-platform register "Extralt"   # writes .zapierapprc; commit it
 ```
 
-Then, for each version:
+Then, for each version, bump `version` in `package.json` and push a matching tag, such as `v0.0.1`.
+The Deploy workflow uploads it with the `ZAPIER_DEPLOY_KEY` secret of the `zapier` environment
+(the `deployKey` in `~/.zapierrc`). Zapier accepts only the next patch, minor or major version
+after an existing one. A version stays private until it is promoted:
 
 ```sh
-npx zapier-platform push        # validates, runs Zapier's integration checks and uploads
+npx zapier-platform promote 0.0.1
 ```
+
+`npx zapier-platform push` uploads from a local checkout the same way.
 
 To try a version against staging, point it at the staging API:
 
