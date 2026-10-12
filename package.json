@@ -1,6 +1,6 @@
 {
 	"name": "zapier-extralt",
-	"version": "1.0.0",
+	"version": "0.1.0",
 	"description": "Zapier integration for Extralt: start Zaps when Robots, Runs, Enrichments and Imports finish, and start Extralt work from Zaps",
 	"private": true,
 	"license": "MIT",
