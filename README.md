@@ -61,9 +61,11 @@ Tests use [nock](https://github.com/nock/nock) and need no Zapier account.
 
 ## Deploying
 
-Pushing needs a Zapier account at the extralt.com domain. Once:
+Pushing needs a Zapier account at the extralt.com domain. The CLI, `zapier-platform`, comes from
+the `zapier-platform-cli` dev dependency, so install dependencies first. Once:
 
 ```sh
+npm ci
 npx zapier-platform login
 npx zapier-platform register "Extralt"   # writes .zapierapprc; commit it
 ```
