@@ -79,7 +79,7 @@ npx zapier-platform push        # validates, runs Zapier's integration checks an
 To try a version against staging, point it at the staging API:
 
 ```sh
-npx zapier-platform env:set 0.1.0 EXTRALT_API_URL=https://api.extralt.dev
+npx zapier-platform env:set 0.0.1 EXTRALT_API_URL=https://api.extralt.dev
 ```
 
 Environment variables are copied to every version pushed after it. Run
