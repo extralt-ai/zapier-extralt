@@ -1,0 +1,63 @@
+name: Release
+
+# release-please keeps a release PR open. Merging it tags the release, and the version is then
+# pushed to Zapier, pointed at the production API and, once the integration is public, promoted.
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release PR and tag
+    runs-on: ubuntu-latest
+    outputs:
+      created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      # The App's token, unlike GITHUB_TOKEN, lets CI run on the release PR.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          token: ${{ steps.app.outputs.token }}
+
+  deploy:
+    name: Push to Zapier
+    needs: release-please
+    if: needs.release-please.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    environment: zapier
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.release-please.outputs.version }}
+      ZAPIER_DEPLOY_KEY: ${{ secrets.ZAPIER_DEPLOY_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run check
+      - run: npx zapier-platform push
+      # Pushing copies the previous version's environment, which may point at staging.
+      - run: npx zapier-platform env:unset "$VERSION" EXTRALT_API_URL
+      # Promoting a private integration requests the public listing instead, so it waits until
+      # Zapier has approved the integration and ZAPIER_PROMOTE is set to true.
+      - if: vars.ZAPIER_PROMOTE == 'true'
+        run: npx zapier-platform promote "$VERSION" --yes

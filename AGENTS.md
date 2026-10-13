@@ -9,7 +9,9 @@ The Zapier integration for the Extralt API v1, built with the Zapier Platform CL
   it before finishing. `npx zapier-platform validate` also runs Zapier's integration checks, which
   need network access to zapier.com.
 - Never commit secrets, tokens or `.env` files. `.zapierapprc` holds only the integration id and
-  is committed; deploy keys live in `~/.zapierrc` or the `ZAPIER_DEPLOY_KEY` variable.
+  is committed; deploy keys live in `~/.zapierrc` or the `ZAPIER_DEPLOY_KEY` secret.
+- PR titles follow Conventional Commits; release-please derives versions and the changelog from
+  them. Never edit the version, `CHANGELOG.md` or `.release-please-manifest.json` by hand.
 - Workflows pin every action to a full commit SHA with its version in a comment, start from
   `permissions: {}` and grant each job only what it needs, never persist checkout credentials, and
   pass untrusted context such as PR titles through `env`. zizmor checks them in CI.

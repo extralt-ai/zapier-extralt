@@ -59,37 +59,34 @@ npm run check   # Prettier, tests and Zapier's schema validation
 
 Tests use [nock](https://github.com/nock/nock) and need no Zapier account.
 
-## Deploying
+## Releasing
 
-Pushing needs a Zapier account at the extralt.com domain. The CLI, `zapier-platform`, comes from
-the `zapier-platform-cli` dev dependency, so install dependencies first. Once:
+Releases are automated from [Conventional Commits](https://www.conventionalcommits.org/) PR titles,
+as in `n8n-nodes-extralt`. release-please keeps a release PR open with the next version and
+`CHANGELOG.md`. Merging it tags the release, and the Release workflow then:
+
+1. pushes that version to Zapier with the `ZAPIER_DEPLOY_KEY` secret of the `zapier` environment;
+2. unsets `EXTRALT_API_URL` on it, so every released version calls the production API;
+3. promotes it, once the repository variable `ZAPIER_PROMOTE` is `true`.
+
+Leave `ZAPIER_PROMOTE` unset until Zapier has approved the public listing: promoting a private
+integration requests the listing instead. Moving existing Zaps to a new version stays manual
+(`npx zapier-platform migrate <from> <to>`), because a breaking change needs a decision.
+
+### Trying a change against staging
+
+Push an unreleased version from your checkout and point it at staging; the release later pushes
+the same version again for production. Pushing needs a Zapier account at the extralt.com domain
+and the CLI, which comes from the `zapier-platform-cli` dev dependency.
 
 ```sh
 npm ci
-npx zapier-platform login
-npx zapier-platform register "Extralt"   # writes .zapierapprc; commit it
+npx zapier-platform login                 # once
+npx zapier-platform push
+npx zapier-platform env:set <version> EXTRALT_API_URL=https://api.extralt.dev
 ```
 
-Then, for each version, bump `version` in `package.json` and push a matching tag, such as `v0.0.1`.
-The Deploy workflow uploads it with the `ZAPIER_DEPLOY_KEY` secret of the `zapier` environment
-(the `deployKey` in `~/.zapierrc`). Zapier accepts only the next patch, minor or major version
-after an existing one. A version stays private until it is promoted:
-
-```sh
-npx zapier-platform promote 0.0.1
-```
-
-`npx zapier-platform push` uploads from a local checkout the same way.
-
-To try a version against staging, point it at the staging API:
-
-```sh
-npx zapier-platform env:set 0.0.0 EXTRALT_API_URL=https://api.extralt.dev
-```
-
-Environment variables are copied to every version pushed after it. Run
-`npx zapier-platform env:unset <version> EXTRALT_API_URL` on a version before promoting it, so
-public users reach `https://api.extralt.com`.
+Zapier accepts only the next patch, minor or major version after an existing one.
 
 ## Publishing
 
