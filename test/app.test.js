@@ -159,6 +159,84 @@ describe('event triggers', () => {
 	});
 });
 
+describe('enrichment changes trigger', () => {
+	const changes = {
+		price_decreases: 2,
+		price_increases: 0,
+		out_of_stock: 0,
+		restocked: 0,
+		listings_added: 0,
+		listings_removed: 0,
+		new_lows: 1,
+	};
+
+	it('passes a signed changes summary through', async () => {
+		const event = {
+			id: 'evt_2',
+			type: 'enrichment.changes',
+			created_at: '2026-10-13T10:40:50Z',
+			data: { id: 'enr_1', status: 'completed', changes },
+		};
+		const result = await appTester(
+			App.triggers.enrichment_changes.operation.perform,
+			delivery(event),
+		);
+		assert.deepEqual(result, [event]);
+	});
+
+	it('samples only Enrichments that found changes, in any final status', async () => {
+		nock(API)
+			.get('/v1/enrich/enrichments')
+			.query({ limit: 25 })
+			.reply(200, {
+				data: [
+					{ id: 'enr_a', status: 'completed', changes: null },
+					{
+						id: 'enr_b',
+						status: 'completed',
+						changes: { ...changes, price_decreases: 0, new_lows: 0 },
+					},
+					{ id: 'enr_c', status: 'running', changes },
+					{ id: 'enr_d', status: 'stopped', changes, updated_at: '2026-10-13T09:00:00Z' },
+				],
+				next_cursor: null,
+			});
+
+		const result = await appTester(App.triggers.enrichment_changes.operation.performList, {
+			authData,
+		});
+		assert.deepEqual(
+			result.map((event) => [event.id, event.type]),
+			[['evt_sample_enr_d', 'enrichment.changes']],
+		);
+	});
+
+	it('falls back to a static sample with counts', async () => {
+		nock(API)
+			.get('/v1/enrich/enrichments')
+			.query({ limit: 25 })
+			.reply(200, { data: [], next_cursor: null });
+
+		const [sample] = await appTester(App.triggers.enrichment_changes.operation.performList, {
+			authData,
+		});
+		assert.equal(sample.type, 'enrichment.changes');
+		assert.equal(sample.data.changes.price_decreases, 12);
+	});
+
+	it('subscribes to the changes event only', async () => {
+		nock(API)
+			.post('/v1/webhooks', (body) => body.event_types.join() === 'enrichment.changes')
+			.reply(201, { id: 'wh_2', secret: SECRET });
+
+		const result = await appTester(App.triggers.enrichment_changes.operation.performSubscribe, {
+			authData,
+			targetUrl: 'https://hooks.zapier.com/hooks/standard/1/abc',
+		});
+		assert.equal(result.id, 'wh_2');
+	});
+});
+
 describe('actions', () => {
 	it('start run sends only the fields the user filled in', async () => {
 		nock(API)

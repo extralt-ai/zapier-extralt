@@ -13,6 +13,10 @@ whether it was started from the dashboard, the Agent, the API or a Schedule:
 - Run Completed, Run Stopped, Run Failed, Run Enrichment Skipped
 - Enrichment Completed, Enrichment Stopped, Enrichment Failed
 - Import Completed, Import Failed
+- Enrichment Changes Found: one summary per Enrichment that found changes, with counts of price
+  decreases and increases, out of stock, restocked, Listings added and removed, and new lows. A
+  Zap that only wants price or stock movements filters on those counts, since a Store's first
+  Enrichment mostly adds Listings.
 
 **Actions:**
 
@@ -44,6 +48,9 @@ Each Zap run receives one event, the same envelope every Extralt webhook carries
 - Every delivery's [Standard Webhooks](https://www.standardwebhooks.com/) signature is checked
   against the secret the API returned when the webhook was created. Unsigned deliveries, and test
   events sent from the dashboard (which carry no resource), do not start the Zap.
+- Rotating a Zap's webhook secret from the dashboard breaks that Zap once the overlap ends, because
+  Zapier keeps the secret it got at creation. Turn the Zap off and on instead, which creates a
+  webhook with a new secret.
 - In the Zap editor, samples are the organization's recent Robots, Runs or Enrichments in the
   matching status, wrapped in the same envelope. Imports have no list route, so their samples are
   static.
