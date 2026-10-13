@@ -1,0 +1,26 @@
+{
+	"name": "zapier-extralt",
+	"version": "0.0.0",
+	"description": "Zapier integration for Extralt: start Zaps when Robots, Runs, Enrichments and Imports finish, and start Extralt work from Zaps",
+	"private": true,
+	"license": "MIT",
+	"homepage": "https://extralt.com",
+	"main": "index.js",
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"format": "prettier --write .",
+		"test": "node --test",
+		"validate": "zapier-platform validate",
+		"check": "prettier --check . && npm test && zapier-platform validate --without-style"
+	},
+	"dependencies": {
+		"zapier-platform-core": "19.2.0"
+	},
+	"devDependencies": {
+		"nock": "15.0.1",
+		"prettier": "3.6.2",
+		"zapier-platform-cli": "19.2.0"
+	}
+}
