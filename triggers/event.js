@@ -122,16 +122,20 @@ const perform = (event) => async (z, bundle) => {
 	return [body];
 };
 
+/** The static sample for an event, when the account has nothing that matches. */
+const staticSample = (event) =>
+	sampleEvent(event, { ...samples[event.resource], status: event.statuses[0], ...event.sample });
+
 const performList = (event) => async (z, bundle) => {
-	const fallback = sampleEvent(event, { ...samples[event.resource], status: event.statuses[0] });
+	const fallback = staticSample(event);
 	if (!event.list) return [fallback];
 
 	const response = await z.request({
 		url: `${apiUrl()}${event.list}`,
 		params: { limit: SAMPLE_PAGE_SIZE },
 	});
-	const matching = (response.data.data || []).filter((item) =>
-		event.statuses.includes(item.status),
+	const matching = (response.data.data || []).filter(
+		(item) => event.statuses.includes(item.status) && (!event.matches || event.matches(item)),
 	);
 	return matching.length > 0
 		? matching.slice(0, 3).map((item) => sampleEvent(event, item))
@@ -141,11 +145,13 @@ const performList = (event) => async (z, bundle) => {
 /** One REST hook trigger per event type, so each reads as its own option in the Zap editor. */
 const eventTrigger = (event) => {
 	const noun = NOUNS[event.resource];
-	const fields = RESOURCE_FIELDS[event.resource].map(([key, label, type]) => ({
-		key: `data__${key}`,
-		label,
-		...(type ? { type } : {}),
-	}));
+	const fields = [...RESOURCE_FIELDS[event.resource], ...(event.fields || [])].map(
+		([key, label, type]) => ({
+			key: `data__${key}`,
+			label,
+			...(type ? { type } : {}),
+		}),
+	);
 	return {
 		key: event.type.replace('.', '_'),
 		noun,
@@ -156,7 +162,7 @@ const eventTrigger = (event) => {
 			performUnsubscribe: unsubscribe,
 			perform: perform(event),
 			performList: performList(event),
-			sample: sampleEvent(event, { ...samples[event.resource], status: event.statuses[0] }),
+			sample: staticSample(event),
 			outputFields: [
 				{ key: 'id', label: 'Event ID' },
 				{ key: 'type', label: 'Event Type' },
