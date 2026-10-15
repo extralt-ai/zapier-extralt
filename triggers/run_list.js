@@ -19,6 +19,8 @@ module.exports = {
 		perform: async (z, bundle) => {
 			// Zapier asks for page 0, then 1, 2… as the user scrolls; the API pages by cursor.
 			const cursor = bundle.meta.page ? await z.cursor.get() : undefined;
+			// A later page without a stored cursor means the previous one was the last.
+			if (bundle.meta.page && !cursor) return [];
 			const response = await z.request({
 				url: `${apiUrl()}/v1/extract/runs`,
 				params: { limit: PAGE_SIZE, ...(cursor ? { cursor } : {}) },

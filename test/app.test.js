@@ -281,6 +281,9 @@ describe('actions', () => {
 		assert.equal(fieldFor({ source_kind: 'run' }).dynamic, 'run_list.id.label');
 		assert.equal(fieldFor({ source_kind: 'import' }).dynamic, undefined);
 		assert.equal(fieldFor({ source_kind: 'import' }).key, 'source_id');
+		// A Run ID must not linger once Source switches to Import.
+		assert.deepEqual(fieldFor({ source_kind: 'import' }).dependsOn, ['source_kind']);
+		assert.deepEqual(fieldFor({ source_kind: 'run' }).dependsOn, ['source_kind']);
 	});
 
 	it('start enrichment sends the source and skips an empty budget', async () => {
@@ -327,6 +330,19 @@ describe('actions', () => {
 			return true;
 		});
 	});
+});
+
+describe('dropdowns', () => {
+	for (const key of ['robot_list', 'run_list']) {
+		it(`${key} stops after the last page instead of repeating the first`, async () => {
+			// No request is mocked: an empty stored cursor must end the list without calling the API.
+			const result = await App.triggers[key].operation.perform(
+				{ cursor: { get: async () => '' } },
+				{ meta: { page: 1 } },
+			);
+			assert.deepEqual(result, []);
+		});
+	}
 });
 
 describe('authentication', () => {

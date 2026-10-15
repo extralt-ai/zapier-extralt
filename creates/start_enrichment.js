@@ -28,6 +28,7 @@ module.exports = {
 							key: 'source_id',
 							label: 'Import ID',
 							required: true,
+							dependsOn: ['source_kind'],
 							helpText:
 								'The ID of the Import, such as the Import ID from the Import Completed trigger.',
 						}
@@ -35,6 +36,7 @@ module.exports = {
 							key: 'source_id',
 							label: 'Run',
 							required: true,
+							dependsOn: ['source_kind'],
 							dynamic: 'run_list.id.label',
 							helpText: 'The Run to enrich, or the Run ID from the Run Completed trigger.',
 						},
