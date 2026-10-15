@@ -22,7 +22,7 @@ module.exports = {
 				altersDynamicFields: true,
 			},
 			// Imports have no list route, so only a Run gets a dropdown.
-			(z, bundle) =>
+			(z, bundle) => [
 				bundle.inputData.source_kind === 'import'
 					? {
 							key: 'source_id',
@@ -38,6 +38,7 @@ module.exports = {
 							dynamic: 'run_list.id.label',
 							helpText: 'The Run to enrich, or the Run ID from the Run Completed trigger.',
 						},
+			],
 			{
 				key: 'budget',
 				label: 'Budget',

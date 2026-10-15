@@ -270,9 +270,17 @@ describe('actions', () => {
 
 	it('start enrichment offers a Run dropdown, and a plain ID for an Import', () => {
 		const sourceId = App.creates.start_enrichment.operation.inputFields[1];
-		assert.equal(sourceId({}, { inputData: {} }).dynamic, 'run_list.id.label');
-		assert.equal(sourceId({}, { inputData: { source_kind: 'run' } }).dynamic, 'run_list.id.label');
-		assert.equal(sourceId({}, { inputData: { source_kind: 'import' } }).dynamic, undefined);
+		const fieldFor = (inputData) => {
+			const fields = sourceId({}, { inputData });
+			// Zapier expects a dynamic field function to return a list of fields.
+			assert.ok(Array.isArray(fields));
+			assert.equal(fields.length, 1);
+			return fields[0];
+		};
+		assert.equal(fieldFor({}).dynamic, 'run_list.id.label');
+		assert.equal(fieldFor({ source_kind: 'run' }).dynamic, 'run_list.id.label');
+		assert.equal(fieldFor({ source_kind: 'import' }).dynamic, undefined);
+		assert.equal(fieldFor({ source_kind: 'import' }).key, 'source_id');
 	});
 
 	it('start enrichment sends the source and skips an empty budget', async () => {
