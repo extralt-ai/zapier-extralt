@@ -42,14 +42,15 @@ module.exports = {
 			},
 		],
 		perform: async (z, bundle) => {
-			const { robot_id, start_urls, budget, auto_enrich } = bundle.inputData;
+			const { robot_id, budget, auto_enrich } = bundle.inputData;
+			const start_urls = (bundle.inputData.start_urls || []).filter(filled);
 			const response = await z.request({
 				method: 'POST',
 				url: `${apiUrl()}/v1/extract/runs`,
 				headers: idempotencyKey(),
 				body: {
 					robot_id,
-					...(start_urls && start_urls.length > 0 ? { start_urls } : {}),
+					...(start_urls.length > 0 ? { start_urls } : {}),
 					...(filled(budget) ? { budget } : {}),
 					...(filled(auto_enrich) ? { auto_enrich } : {}),
 				},

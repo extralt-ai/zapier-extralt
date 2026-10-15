@@ -22,7 +22,7 @@ whether it was started from the dashboard, the Agent, the API or a Schedule:
 
 - Create Robot: build a Robot for a store URL and country.
 - Start Run: run a Robot, optionally from start URLs, with a budget and automatic Enrichment.
-- Start Enrichment: normalize the Captures of a Run or Import.
+- Start Enrichment: normalize the Captures of a Run, picked from a dropdown, or of an Import.
 - Run Query: run read-only SQL and return the rows as line items, so a later step can create one
   spreadsheet row or record per row.
 

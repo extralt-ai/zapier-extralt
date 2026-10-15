@@ -251,6 +251,54 @@ describe('actions', () => {
 		assert.equal(result.id, 'run_1');
 	});
 
+	it('start run skips empty start URLs', async () => {
+		nock(API)
+			.post('/v1/extract/runs', {
+				robot_id: 'robot_1',
+				start_urls: ['https://www.example-store.com/collections/running'],
+			})
+			.reply(202, { id: 'run_1', status: 'pending' });
+
+		await appTester(App.creates.start_run.operation.perform, {
+			authData,
+			inputData: {
+				robot_id: 'robot_1',
+				start_urls: ['', 'https://www.example-store.com/collections/running'],
+			},
+		});
+	});
+
+	it('start enrichment offers a Run dropdown, and a plain ID for an Import', () => {
+		const sourceId = App.creates.start_enrichment.operation.inputFields[1];
+		const fieldFor = (inputData) => {
+			const fields = sourceId({}, { inputData });
+			// Zapier expects a dynamic field function to return a list of fields.
+			assert.ok(Array.isArray(fields));
+			assert.equal(fields.length, 1);
+			return fields[0];
+		};
+		assert.equal(fieldFor({}).dynamic, 'run_list.id.label');
+		assert.equal(fieldFor({ source_kind: 'run' }).dynamic, 'run_list.id.label');
+		assert.equal(fieldFor({ source_kind: 'import' }).dynamic, undefined);
+		assert.equal(fieldFor({ source_kind: 'import' }).key, 'source_id');
+		// A Run ID must not linger once Source switches to Import.
+		assert.deepEqual(fieldFor({ source_kind: 'import' }).dependsOn, ['source_kind']);
+		assert.deepEqual(fieldFor({ source_kind: 'run' }).dependsOn, ['source_kind']);
+	});
+
+	it('start enrichment sends the source and skips an empty budget', async () => {
+		nock(API)
+			.post('/v1/enrich/enrichments', { source: { kind: 'import', id: 'imp_1' } })
+			.matchHeader('idempotency-key', /.+/)
+			.reply(202, { id: 'enr_1', status: 'pending' });
+
+		const result = await appTester(App.creates.start_enrichment.operation.perform, {
+			authData,
+			inputData: { source_kind: 'import', source_id: 'imp_1', budget: '' },
+		});
+		assert.equal(result.id, 'enr_1');
+	});
+
 	it('shows the API error message and request id', async () => {
 		nock(API)
 			.post('/v1/extract/runs')
@@ -281,5 +329,24 @@ describe('actions', () => {
 			assert.equal(error.name, 'ExpiredAuthError');
 			return true;
 		});
+	});
+});
+
+describe('dropdowns', () => {
+	for (const key of ['robot_list', 'run_list']) {
+		it(`${key} stops after the last page instead of repeating the first`, async () => {
+			// No request is mocked: an empty stored cursor must end the list without calling the API.
+			const result = await App.triggers[key].operation.perform(
+				{ cursor: { get: async () => '' } },
+				{ meta: { page: 1 } },
+			);
+			assert.deepEqual(result, []);
+		});
+	}
+});
+
+describe('authentication', () => {
+	it('labels a connection with the end of its API key', () => {
+		assert.equal(App.authentication.connectionLabel({}, { authData }), 'API key ending in _key');
 	});
 });

@@ -19,13 +19,28 @@ module.exports = {
 				required: true,
 				choices: { run: 'Run', import: 'Import' },
 				default: 'run',
+				altersDynamicFields: true,
 			},
-			{
-				key: 'source_id',
-				label: 'Source ID',
-				required: true,
-				helpText: 'The ID of the Run or Import, such as the Run ID from the Run Completed trigger.',
-			},
+			// Imports have no list route, so only a Run gets a dropdown.
+			(z, bundle) => [
+				bundle.inputData.source_kind === 'import'
+					? {
+							key: 'source_id',
+							label: 'Import ID',
+							required: true,
+							dependsOn: ['source_kind'],
+							helpText:
+								'The ID of the Import, such as the Import ID from the Import Completed trigger.',
+						}
+					: {
+							key: 'source_id',
+							label: 'Run',
+							required: true,
+							dependsOn: ['source_kind'],
+							dynamic: 'run_list.id.label',
+							helpText: 'The Run to enrich, or the Run ID from the Run Completed trigger.',
+						},
+			],
 			{
 				key: 'budget',
 				label: 'Budget',
