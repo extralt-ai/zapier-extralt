@@ -251,6 +251,43 @@ describe('actions', () => {
 		assert.equal(result.id, 'run_1');
 	});
 
+	it('start run skips empty start URLs', async () => {
+		nock(API)
+			.post('/v1/extract/runs', {
+				robot_id: 'robot_1',
+				start_urls: ['https://www.example-store.com/collections/running'],
+			})
+			.reply(202, { id: 'run_1', status: 'pending' });
+
+		await appTester(App.creates.start_run.operation.perform, {
+			authData,
+			inputData: {
+				robot_id: 'robot_1',
+				start_urls: ['', 'https://www.example-store.com/collections/running'],
+			},
+		});
+	});
+
+	it('start enrichment offers a Run dropdown, and a plain ID for an Import', () => {
+		const sourceId = App.creates.start_enrichment.operation.inputFields[1];
+		assert.equal(sourceId({}, { inputData: {} }).dynamic, 'run_list.id.label');
+		assert.equal(sourceId({}, { inputData: { source_kind: 'run' } }).dynamic, 'run_list.id.label');
+		assert.equal(sourceId({}, { inputData: { source_kind: 'import' } }).dynamic, undefined);
+	});
+
+	it('start enrichment sends the source and skips an empty budget', async () => {
+		nock(API)
+			.post('/v1/enrich/enrichments', { source: { kind: 'import', id: 'imp_1' } })
+			.matchHeader('idempotency-key', /.+/)
+			.reply(202, { id: 'enr_1', status: 'pending' });
+
+		const result = await appTester(App.creates.start_enrichment.operation.perform, {
+			authData,
+			inputData: { source_kind: 'import', source_id: 'imp_1', budget: '' },
+		});
+		assert.equal(result.id, 'enr_1');
+	});
+
 	it('shows the API error message and request id', async () => {
 		nock(API)
 			.post('/v1/extract/runs')
@@ -281,5 +318,11 @@ describe('actions', () => {
 			assert.equal(error.name, 'ExpiredAuthError');
 			return true;
 		});
+	});
+});
+
+describe('authentication', () => {
+	it('labels a connection with the end of its API key', () => {
+		assert.equal(App.authentication.connectionLabel({}, { authData }), 'API key ending in _key');
 	});
 });
